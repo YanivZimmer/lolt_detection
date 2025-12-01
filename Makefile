@@ -1,0 +1,45 @@
+.PHONY: setup serve train evaluate preprocess clean help
+
+help:
+	@echo "LOTL Detection - Available Commands:"
+	@echo ""
+	@echo "  make setup       - Create environment and install dependencies"
+	@echo "  make serve       - Start Chainlit app for local testing"
+	@echo "  make train       - Train the detection models"
+	@echo "  make evaluate    - Run evaluation on test set"
+	@echo "  make preprocess  - Preprocess dataset (filter label agreement)"
+	@echo "  make clean       - Clean generated files and models"
+	@echo ""
+
+setup:
+	@echo "Setting up environment..."
+	uv venv
+	uv pip install -e .
+	@echo "✅ Setup complete!"
+
+serve:
+	@echo "Starting Chainlit app..."
+	chainlit run app.py
+
+train:
+	@echo "Training LOTL detection models..."
+	python train.py --dataset dataset.jsonl --output-dir models
+	@echo "✅ Training complete!"
+
+evaluate:
+	@echo "Evaluating models..."
+	python train.py --dataset dataset.jsonl --output-dir models
+	@echo "✅ Evaluation complete! Check models/evaluation_results.json"
+
+preprocess:
+	@echo "Preprocessing dataset..."
+	python -c "from data_loader import load_dataset, filter_label_agreement; events = load_dataset('dataset.jsonl'); filtered, _ = filter_label_agreement(events); print(f'Filtered dataset: {len(filtered)} events')"
+	@echo "✅ Preprocessing complete!"
+
+clean:
+	@echo "Cleaning generated files..."
+	rm -rf models/*.pkl models/*.pt models/*.json
+	rm -rf __pycache__ */__pycache__ */*.pyc
+	rm -rf .chainlit
+	@echo "✅ Clean complete!"
+
