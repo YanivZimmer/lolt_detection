@@ -39,9 +39,9 @@ def split_dataset(events: List[Dict[str, Any]], test_size: float = 0.2,
     labels = []
     for event in events:
         if 'claude-sonnet-4-5' in event:
-            label = event['claude-sonnet-4-5'].get('predicted_label', 'benign')
-        else:
-            label = event.get('_label', 'benign')
+            label = event['claude-sonnet-4-5']['predicted_label']#.get('predicted_label', 'benign')
+        #else:
+        #    label = event.get('_label', 'benign')
         labels.append(label)
     
     # Create indices
@@ -93,9 +93,9 @@ def get_labels(events: List[Dict[str, Any]], use_claude_label: bool = True) -> L
     labels = []
     for event in events:
         if use_claude_label and 'claude-sonnet-4-5' in event:
-            label = event['claude-sonnet-4-5'].get('predicted_label', 'benign')
-        else:
-            label = event.get('_label', 'benign')
+            label = event['claude-sonnet-4-5']['predicted_label']#.get('predicted_label', 'benign')
+        #else:
+        #    label = event.get('_label', 'benign')
         labels.append(label)
     return labels
 

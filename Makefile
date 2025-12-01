@@ -19,7 +19,7 @@ setup:
 
 serve:
 	@echo "Starting Chainlit app..."
-	chainlit run app.py
+	chainlit run lotl_detector/app.py
 
 train:
 	@echo "Training LOTL detection models..."

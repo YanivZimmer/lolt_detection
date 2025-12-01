@@ -367,7 +367,7 @@ class SmallNeuralNetwork:
         """Load model from file."""
         import torch
         
-        model_data = torch.load(filepath, map_location='cpu')
+        model_data = torch.load(filepath, weights_only=False, map_location='cpu')
         
         self.input_dim = model_data['input_dim']
         self.hidden_dims = model_data['hidden_dims']
