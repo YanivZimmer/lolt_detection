@@ -1,5 +1,5 @@
 [project]
-name = "lotl-detector"
+name = "lotl_detector"
 version = "0.1.0"
 description = "Efficient LOTL (Living Off The Land) Attack Detector"
 readme = "README.md"

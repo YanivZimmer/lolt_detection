@@ -22,7 +22,7 @@ class LOTLEnsemble:
                  use_neural_network: bool = True,
                  use_llm_reasoning: bool = True,
                  ensemble_method: str = 'weighted_vote'):
-        """
+        """ 
         Initialize ensemble model.
         
         Args:
@@ -33,7 +33,7 @@ class LOTLEnsemble:
         """
         self.use_random_forest = use_random_forest
         self.use_neural_network = use_neural_network
-        self.use_llm_reasoning = use_llm_reasoning
+        self.use_llm_reasoning = False
         self.ensemble_method = ensemble_method
         
         self.random_forest = RandomForestModel() if use_random_forest else None
@@ -125,7 +125,18 @@ class LOTLEnsemble:
             nn_probs = self.neural_network.predict_proba(X)
             predictions.append(nn_preds)
             probabilities.append(nn_probs)
-        
+        # CR: not using the model, just using the explanation
+        if self.use_llm_reasoning:
+            #CR: predict_with_explanation returns a tuple of (predicted_label, explanation) but not probabilities 
+            #CR: we need to convert the explanation to a probability, but we don't have a model to do this
+            #CR: we need to use the explanation to predict the label
+            #CR: we need to use the explanation to predict the probability
+            #CR: we need to use the explanation to predict the confidence
+            #CR: we need to use the explanation to predict the explanation
+            #CR: we need to use the explanation to predict the explanation
+            llm_preds, llm_explanation = self.llm_distiller.predict_with_explanation(events)
+            predictions.append(llm_preds)
+            probabilities.append(llm_probs)
         # Combine predictions
         if self.ensemble_method == 'weighted_vote':
             # Weighted voting based on confidence

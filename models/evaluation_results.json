@@ -1,0 +1,15 @@
+{
+  "metrics": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  },
+  "performance": {
+    "training_time_seconds": 8.989481210708618,
+    "inference_time_seconds": 0.6829979419708252,
+    "avg_latency_ms": 13.938733509608678,
+    "num_train": 192,
+    "num_test": 49
+  }
+}

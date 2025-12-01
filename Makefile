@@ -23,22 +23,22 @@ serve:
 
 train:
 	@echo "Training LOTL detection models..."
-	python train.py --dataset dataset.jsonl --output-dir models
+	python lotl_detector/train.py --dataset data.jsonl --output-dir models
 	@echo "✅ Training complete!"
 
 evaluate:
 	@echo "Evaluating models..."
-	python train.py --dataset dataset.jsonl --output-dir models
+	python lotl_detector/train.py --dataset data.jsonl --output-dir models
 	@echo "✅ Evaluation complete! Check models/evaluation_results.json"
 
 preprocess:
 	@echo "Preprocessing dataset..."
-	python -c "from data_loader import load_dataset, filter_label_agreement; events = load_dataset('dataset.jsonl'); filtered, _ = filter_label_agreement(events); print(f'Filtered dataset: {len(filtered)} events')"
+	python -c "from lotl_detector.data_loader import load_dataset, filter_label_agreement; events = load_dataset('data.jsonl'); filtered, _ = filter_label_agreement(events); print(f'Filtered dataset: {len(filtered)} events')"
 	@echo "✅ Preprocessing complete!"
 
 clean:
 	@echo "Cleaning generated files..."
-	rm -rf models/*.pkl models/*.pt models/*.json
+	rm -rf lotl_detector/models/*.pkl lotl_detector/models/*.pt lotl_detector/models/*.json
 	rm -rf __pycache__ */__pycache__ */*.pyc
 	rm -rf .chainlit
 	@echo "✅ Clean complete!"

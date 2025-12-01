@@ -14,7 +14,7 @@ from models import evaluate_model
 
 def main():
     parser = argparse.ArgumentParser(description='Evaluate LOTL detection models')
-    parser.add_argument('--dataset', type=str, default='dataset.jsonl',
+    parser.add_argument('--dataset', type=str, default='data.jsonl',
                        help='Path to dataset file')
     parser.add_argument('--model-dir', type=str, default='models',
                        help='Directory containing trained models')

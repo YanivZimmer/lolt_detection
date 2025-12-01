@@ -55,7 +55,7 @@ make train
 ```
 
 This will:
-- Load the dataset from `dataset.jsonl`
+- Load the dataset from `data.jsonl`
 - Filter events where Claude and ground truth labels agree
 - Extract comprehensive features
 - Train Random Forest and Neural Network models
@@ -63,7 +63,7 @@ This will:
 
 **Note**: For Neural Network training with GPU, use the Colab notebook:
 - Upload `train_neural_network.ipynb` to Google Colab
-- Upload `dataset.jsonl` and required Python files
+- Upload `data.jsonl` and required Python files
 - Run the notebook to train and download the model
 - Place the downloaded model in `models/` directory
 
@@ -110,11 +110,11 @@ torq3/
 ### Training
 
 ```bash
-python train.py --dataset dataset.jsonl --output-dir models
+python train.py --dataset data.jsonl --output-dir models
 ```
 
 Options:
-- `--dataset`: Path to dataset file (default: `dataset.jsonl`)
+- `--dataset`: Path to dataset file (default: `data.jsonl`)
 - `--output-dir`: Directory to save models (default: `models`)
 - `--test-size`: Fraction for test set (default: 0.2)
 - `--random-seed`: Random seed (default: 42)
@@ -170,7 +170,7 @@ Target metrics (on test set):
 
 ## Dataset Format
 
-Each line in `dataset.jsonl` is a JSON object:
+Each line in `data.jsonl` is a JSON object:
 
 ```json
 {

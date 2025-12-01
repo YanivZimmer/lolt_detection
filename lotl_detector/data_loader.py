@@ -9,6 +9,9 @@ from pathlib import Path
 def load_dataset(file_path: str) -> List[Dict[str, Any]]:
     """Load JSONL dataset."""
     events = []
+    #current dir is lotl_detector
+    file_path = Path(__file__).parent / file_path
+    print(f"Loading dataset from {file_path}")
     with open(file_path, 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
