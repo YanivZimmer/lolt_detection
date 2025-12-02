@@ -2,8 +2,10 @@
 Data loading utilities for LOTL dataset.
 """
 import json
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Iterator
 from pathlib import Path
+from sklearn.model_selection import StratifiedKFold
+import numpy as np
 
 
 def load_dataset(file_path: str) -> List[Dict[str, Any]]:
@@ -38,10 +40,11 @@ def split_dataset(events: List[Dict[str, Any]], test_size: float = 0.2,
     # Get labels for stratification
     labels = []
     for event in events:
-        if 'claude-sonnet-4-5' in event:
-            label = event['claude-sonnet-4-5']['predicted_label']#.get('predicted_label', 'benign')
+        #if 'claude-sonnet-4-5' in event:
+        #    label = event['claude-sonnet-4-5']['predicted_label']#.get('predicted_label', 'benign')
         #else:
-        #    label = event.get('_label', 'benign')
+        #   label = event.get('_label', 'benign')
+        label = event['_label']
         labels.append(label)
     
     # Create indices
@@ -92,10 +95,10 @@ def get_labels(events: List[Dict[str, Any]], use_claude_label: bool = True) -> L
     """
     labels = []
     for event in events:
-        if use_claude_label and 'claude-sonnet-4-5' in event:
-            label = event['claude-sonnet-4-5']['predicted_label']#.get('predicted_label', 'benign')
-        #else:
-        #    label = event.get('_label', 'benign')
+        if use_claude_label:
+            label = event['claude-sonnet-4-5']['predicted_label']
+        else:
+            label = event['_label']
         labels.append(label)
     return labels
 
@@ -128,6 +131,47 @@ def filter_label_agreement(events: List[Dict[str, Any]]) -> Tuple[List[Dict[str,
             disagreement_events.append(event)
     
     return filtered_events, disagreement_events
+
+
+def create_kfold_splits(events: List[Dict[str, Any]], labels: List[str], 
+                       n_splits: int = 5, random_seed: int = 42) -> Iterator[Tuple[List[int], List[int]]]:
+    """
+    Create k-fold cross-validation splits with reproducible folds.
+    
+    Args:
+        events: List of event dictionaries
+        labels: List of labels
+        n_splits: Number of folds (default: 5)
+        random_seed: Random seed for reproducibility
+        
+    Yields:
+        Tuple of (train_indices, test_indices) for each fold
+    """
+    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_seed)
+    
+    # Convert labels to numpy array for sklearn
+    labels_array = np.array(labels)
+    indices = np.arange(len(events))
+    
+    for train_idx, test_idx in skf.split(indices, labels_array):
+        yield train_idx.tolist(), test_idx.tolist()
+
+
+def get_kfold_splits(events: List[Dict[str, Any]], labels: List[str],
+                    n_splits: int = 5, random_seed: int = 42) -> List[Tuple[List[int], List[int]]]:
+    """
+    Get all k-fold splits as a list.
+    
+    Args:
+        events: List of event dictionaries
+        labels: List of labels
+        n_splits: Number of folds (default: 5)
+        random_seed: Random seed for reproducibility
+        
+    Returns:
+        List of (train_indices, test_indices) tuples for each fold
+    """
+    return list(create_kfold_splits(events, labels, n_splits, random_seed))
 
 
 def sanitize_event_for_inference(event: Dict[str, Any]) -> Dict[str, Any]:

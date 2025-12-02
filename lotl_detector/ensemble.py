@@ -32,7 +32,7 @@ class LOTLEnsemble:
             ensemble_method: 'weighted_vote', 'average_proba', or 'majority_vote'
         """
         self.use_random_forest = use_random_forest
-        self.use_neural_network = use_neural_network
+        self.use_neural_network = False
         self.use_llm_reasoning = False
         self.ensemble_method = ensemble_method
         
@@ -125,18 +125,9 @@ class LOTLEnsemble:
             nn_probs = self.neural_network.predict_proba(X)
             predictions.append(nn_preds)
             probabilities.append(nn_probs)
-        # CR: not using the model, just using the explanation
-        if self.use_llm_reasoning:
-            #CR: predict_with_explanation returns a tuple of (predicted_label, explanation) but not probabilities 
-            #CR: we need to convert the explanation to a probability, but we don't have a model to do this
-            #CR: we need to use the explanation to predict the label
-            #CR: we need to use the explanation to predict the probability
-            #CR: we need to use the explanation to predict the confidence
-            #CR: we need to use the explanation to predict the explanation
-            #CR: we need to use the explanation to predict the explanation
-            llm_preds, llm_explanation = self.llm_distiller.predict_with_explanation(events)
-            predictions.append(llm_preds)
-            probabilities.append(llm_probs)
+        # Note: LLM reasoning is currently disabled (use_llm_reasoning=False)
+        # The LLM distiller is used for explanation generation, not for ensemble voting
+        # Future: When student LLM is trained, it can be integrated here
         # Combine predictions
         if self.ensemble_method == 'weighted_vote':
             # Weighted voting based on confidence
@@ -228,7 +219,8 @@ class LOTLEnsemble:
     def _generate_explanation(self, event: Dict[str, Any], prediction: str, 
                              features: np.ndarray, confidence: float) -> str:
         """
-        Generate human-readable explanation for a prediction.
+        Generate human-readable explanation for a prediction using at least 3 features.
+        Uses natural language and includes attack type information.
         
         Args:
             event: Event dictionary
@@ -237,61 +229,206 @@ class LOTLEnsemble:
             confidence: Prediction confidence
             
         Returns:
-            Explanation string
+            Natural language explanation string
         """
-        explanations = []
-        
         # Get top contributing features from Random Forest
+        top_contributing_features = []
         if self.use_random_forest and self.random_forest.is_fitted:
             rf_explanations = self.random_forest.explain_prediction(
                 features.reshape(1, -1), 
                 feature_names=self.feature_names
             )
             if rf_explanations:
-                top_features = rf_explanations[0]['top_features'][:3]
-                for feat in top_features:
-                    if abs(feat['contribution']) > 0.1:
-                        explanations.append(
-                            f"{feat['name']} (contribution: {feat['contribution']:.2f})"
-                        )
+                top_features = rf_explanations[0]['top_features']
+                # Get top 5 features with significant contribution
+                top_contributing_features = [
+                    feat for feat in top_features 
+                    if abs(feat['contribution']) > 0.05
+                ][:5]
         
-        # Add LLM-based reasoning if available
-        if self.use_llm_reasoning and self.llm_distiller:
-            llm_explanation = self.llm_distiller.generate_explanation(event, prediction)
-            explanations.append(llm_explanation)
-        
-        # Add command-line specific details
+        # Extract event details
         cmdline = event.get('CommandLine', '') or event.get('commandLine', '')
         image = event.get('Image', '') or event.get('SourceImage', '') or event.get('image', '')
+        parent_image = event.get('ParentImage', '') or event.get('parentImage', '')
+        user = event.get('User', '') or event.get('user', '')
+        integrity = event.get('IntegrityLevel', '') or event.get('integrityLevel', '')
+        
+        # Determine attack type from features and event
+        attack_type = self._infer_attack_type(event, features)
+        
+        # Build natural language explanation
+        explanation_parts = []
         
         if prediction == 'malicious':
+            explanation_parts.append(f"This event is classified as **malicious** with {confidence:.0%} confidence.")
+            
+            # Use top 3+ features for explanation
+            feature_explanations = []
+            
+            # Feature 1: Process relationship
+            if image and parent_image:
+                image_exe = Path(image).name.lower() if image else ''
+                parent_exe = Path(parent_image).name.lower() if parent_image else ''
+                
+                # Check for suspicious parent-child
+                if any(feat['name'] == 'suspicious_parent_child' for feat in top_contributing_features):
+                    feature_explanations.append(
+                        f"The process {image_exe} was launched by {parent_exe}, which is an unusual parent-child relationship that often indicates lateral movement or process injection."
+                    )
+                elif any(feat['name'] == 'explorer_from_userinit' for feat in top_contributing_features):
+                    feature_explanations.append(
+                        f"Windows Explorer was launched by userinit.exe, which is suspicious because Explorer should typically be executed by the user GUI rather than through command-line initialization - this may indicate lateral movement."
+                    )
+                elif any(feat['name'] == 'system_binary_from_explorer' for feat in top_contributing_features):
+                    feature_explanations.append(
+                        f"A system binary ({image_exe}) was launched from Explorer, which is unusual as system binaries are typically launched by system processes rather than user-initiated GUI applications."
+                    )
+            
+            # Feature 2: Command-line analysis
             if cmdline:
                 cmd_lower = cmdline.lower()
-                if '-enc' in cmd_lower:
-                    explanations.append("Contains encoded PowerShell command")
-                if 'bypass' in cmd_lower and 'executionpolicy' in cmd_lower:
-                    explanations.append("Attempts to bypass execution policy")
-                if '/node:' in cmdline:
-                    explanations.append("Attempts remote execution")
+                
+                if any(feat['name'].startswith('obfuscation') for feat in top_contributing_features):
+                    if '-enc' in cmd_lower or 'encoded' in cmd_lower:
+                        feature_explanations.append(
+                            "The command contains encoded PowerShell content, which is a common obfuscation technique used to evade detection and hide malicious payloads."
+                        )
+                    elif any(char in cmdline for char in ['%', '\\x', '0x']):
+                        feature_explanations.append(
+                            "The command contains encoding patterns (URL encoding, hex encoding) that suggest obfuscation attempts to hide the true intent of the command."
+                        )
+                
+                if any(feat['name'] == 'has_powershell_bypass' for feat in top_contributing_features):
+                    feature_explanations.append(
+                        "The command attempts to bypass PowerShell's execution policy, which is a defense evasion technique commonly used by attackers to run unauthorized scripts."
+                    )
+                
+                if any(feat['name'] == 'system_file_modification' for feat in top_contributing_features):
+                    feature_explanations.append(
+                        "The command attempts to modify critical system files (such as the hosts file), which is a defense evasion technique used to redirect network traffic or block security updates."
+                    )
+            
+            # Feature 3: Execution context
+            if any(feat['name'] == 'is_system_user' for feat in top_contributing_features) or 'SYSTEM' in user.upper():
+                feature_explanations.append(
+                    f"The command was executed by a system account ({user}), which is unusual for interactive commands and may indicate privilege escalation or system-level compromise."
+                )
+            elif any(feat['name'] == 'system_account_admin_tool' for feat in top_contributing_features):
+                feature_explanations.append(
+                    f"A system service account ({user}) is using administrative tools, which is anomalous and may indicate unauthorized system-level access."
+                )
+            
+            # Feature 4: Additional indicators
+            if any(feat['name'] == 'suspicious_path_operation' for feat in top_contributing_features):
+                feature_explanations.append(
+                    "The command operates on files in suspicious locations (such as Public Downloads or Temp directories), which are commonly used by attackers for staging malicious payloads."
+                )
+            
+            if any(feat['name'] == 'compression_operation' for feat in top_contributing_features):
+                feature_explanations.append(
+                    "The command performs compression or archiving operations, which may indicate data staging or exfiltration preparation."
+                )
+            
+            # Ensure we have at least 3 feature explanations
+            if len(feature_explanations) < 3:
+                # Add generic feature-based explanations
+                remaining_features = [f for f in top_contributing_features 
+                                    if not any(f['name'] in exp for exp in feature_explanations)][:3-len(feature_explanations)]
+                for feat in remaining_features:
+                    if feat['contribution'] > 0:
+                        feature_explanations.append(
+                            f"The {feat['name'].replace('_', ' ')} indicator strongly suggests malicious activity (contribution: {feat['contribution']:.2f})."
+                        )
+            
+            # Add attack type
+            if attack_type:
+                explanation_parts.append(f"**Attack Type**: {attack_type}")
+            
+            # Combine feature explanations
+            explanation_parts.extend(feature_explanations[:5])  # Use top 5
+            
+        else:  # benign
+            explanation_parts.append(f"This event is classified as **benign** with {confidence:.0%} confidence.")
+            
+            # Explain why it's benign using features
+            benign_indicators = []
+            
+            if cmdline:
+                cmd_lower = cmdline.lower()
+                if any(cmd in cmd_lower for cmd in ['dir', 'cd', 'type', 'echo', 'tasklist']):
+                    benign_indicators.append(
+                        "The command uses standard administrative tools for routine system management tasks."
+                    )
             
             if image:
-                exe_name = Path(image).name.lower() if image else ''
-                if exe_name in ['cmd.exe', 'powershell.exe', 'wmic.exe']:
-                    explanations.append(f"Uses native system binary: {exe_name}")
-        else:
-            explanations.append("No suspicious indicators detected")
-            if cmdline:
-                cmd_lower = cmdline.lower()
-                if any(cmd in cmd_lower for cmd in ['dir', 'cd', 'type', 'echo']):
-                    explanations.append("Uses common administrative commands")
+                image_exe = Path(image).name.lower() if image else ''
+                if image_exe in ['explorer.exe', 'notepad.exe', 'calc.exe']:
+                    benign_indicators.append(
+                        f"The process ({image_exe}) is a standard Windows application launched through normal user interaction."
+                    )
+            
+            if 'Medium' in integrity or 'High' in integrity:
+                benign_indicators.append(
+                    "The process runs with appropriate integrity level for user-initiated activities."
+                )
+            
+            if not benign_indicators:
+                benign_indicators.append(
+                    "No suspicious indicators were detected in the process execution, command-line arguments, or execution context."
+                )
+            
+            explanation_parts.extend(benign_indicators[:3])
         
-        # Combine explanations
-        if explanations:
-            explanation = ". ".join(explanations[:5])  # Limit to top 5
-        else:
-            explanation = f"Predicted as {prediction} with confidence {confidence:.2f}"
-        
+        # Combine into natural language
+        explanation = " ".join(explanation_parts)
         return explanation
+    
+    def _infer_attack_type(self, event: Dict[str, Any], features: np.ndarray) -> str:
+        """
+        Infer attack type from event and features.
+        
+        Args:
+            event: Event dictionary
+            features: Feature vector
+            
+        Returns:
+            Attack type string or empty string
+        """
+        # Map feature names to attack types
+        feature_to_attack = {
+            'apt_lateral_movement': 'lateral_movement',
+            'apt_credential_access': 'credential_access',
+            'apt_persistence': 'persistence',
+            'apt_defense_evasion': 'defense_evasion',
+            'apt_collection': 'collection',
+            'apt_exfiltration': 'exfiltration',
+            'explorer_from_userinit': 'lateral_movement',
+            'system_file_modification': 'defense_evasion',
+            'compression_operation': 'data_staging',
+            'process_discovery': 'discovery',
+            'network_discovery': 'discovery',
+        }
+        
+        # Check features for attack type indicators
+        feature_dict = dict(zip(self.feature_names, features))
+        
+        attack_types = []
+        for feat_name, attack_type in feature_to_attack.items():
+            if feat_name in feature_dict and feature_dict[feat_name] > 0:
+                attack_types.append(attack_type)
+        
+        # Also check event metadata
+        attack_technique = event.get('_attack_technique', '')
+        if attack_technique:
+            attack_types.append(attack_technique)
+        
+        # Return most common or first
+        if attack_types:
+            from collections import Counter
+            most_common = Counter(attack_types).most_common(1)
+            return most_common[0][0] if most_common else ''
+        
+        return ''
     
     def save(self, directory: str):
         """

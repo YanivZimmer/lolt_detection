@@ -57,15 +57,29 @@ make train
 This will:
 - Load the dataset from `data.jsonl`
 - Filter events where Claude and ground truth labels agree
-- Extract comprehensive features
+- Extract comprehensive features (including Claude reasoning insights)
+- Train models using **5-fold cross-validation** for robust evaluation
 - Train Random Forest and Neural Network models
+- Optionally train Disagreement Detector (V2 model)
 - Save models to `models/` directory
+
+**Options**:
+- `--use-augmentation`: Enable data augmentation for training
+- `--use-disagreement-detector`: Train V2 model to detect label disagreements
+- `--train-final-model`: Train final model on all data after k-fold evaluation
+- `--n-splits`: Number of folds (default: 5)
 
 **Note**: For Neural Network training with GPU, use the Colab notebook:
 - Upload `train_neural_network.ipynb` to Google Colab
 - Upload `data.jsonl` and required Python files
+- The notebook uses the **same k-fold splits** as the main training (reproducible)
 - Run the notebook to train and download the model
 - Place the downloaded model in `models/` directory
+
+**Note**: For LLM Distillation training:
+- Upload `train_llm_distillation.ipynb` to Google Colab
+- This trains a lightweight LLM to distill Claude's reasoning
+- Download and place in `models/llm_distillation/` directory
 
 ### 2. Run Interactive Demo
 
@@ -110,17 +124,19 @@ torq3/
 ### Training
 
 ```bash
-python train.py --dataset data.jsonl --output-dir models
+python lotl_detector/train.py --dataset data.jsonl --output-dir models
 ```
 
 Options:
 - `--dataset`: Path to dataset file (default: `data.jsonl`)
 - `--output-dir`: Directory to save models (default: `models`)
-- `--test-size`: Fraction for test set (default: 0.2)
-- `--random-seed`: Random seed (default: 42)
+- `--n-splits`: Number of folds for cross-validation (default: 5)
+- `--random-seed`: Random seed for reproducibility (default: 42)
 - `--use-rf`: Use Random Forest (default: True)
 - `--use-nn`: Use Neural Network (default: True)
-- `--use-llm`: Use LLM reasoning (default: True)
+- `--use-augmentation`: Enable data augmentation (default: False)
+- `--use-disagreement-detector`: Train V2 disagreement detector (default: False)
+- `--train-final-model`: Train final model on all data (default: False)
 
 ### Inference
 
@@ -153,12 +169,25 @@ The system extracts comprehensive features from Sysmon events:
 3. **Sysmon Features**: Event IDs, integrity levels, user context, network activity
 4. **Command-Line Features**: Path analysis, pattern detection, operation types
 5. **Text Embeddings**: Lightweight sentence transformer embeddings (all-MiniLM-L6-v2)
+6. **Claude Reasoning Insights**: Features derived from Claude's reasoning patterns:
+   - Explorer launched by userinit.exe (lateral movement indicator)
+   - System accounts using admin tools
+   - Suspicious path operations
+   - System file modifications
+   - Compression/archiving operations (data staging)
 
 ### Models
 
 1. **Random Forest**: 100 trees with balanced class weights
 2. **Neural Network**: 2-layer MLP (128→64→2) with dropout
 3. **Ensemble**: Weighted voting based on prediction confidence
+4. **Disagreement Detector (V2)**: Optional model to detect cases where Claude and ground truth disagree
+
+### Evaluation
+
+- **K-Fold Cross-Validation**: All models are evaluated using 5-fold cross-validation for robust performance estimation
+- **Reproducible Splits**: Same random seed ensures consistent folds across training runs
+- **Same Folds**: Neural network notebook uses identical k-fold splits as main training
 
 ## Performance
 

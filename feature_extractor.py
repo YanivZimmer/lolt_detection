@@ -124,19 +124,6 @@ class ComprehensiveFeatureExtractor:
         features['user_length'] = len(user)
         features['domain_length'] = len(domain)
         
-        # Features based on Claude reasoning: System accounts with interactive tools
-        # NETWORK SERVICE using admin tools is suspicious
-        image = event.get('Image', '') or event.get('SourceImage', '') or event.get('image', '')
-        if image:
-            image_lower = image.lower()
-            admin_tools = ['reg.exe', 'sc.exe', 'takeown.exe', 'icacls.exe', 'cmd.exe']
-            features['system_account_admin_tool'] = 1 if (
-                features['is_network_service'] == 1 and
-                any(tool in image_lower for tool in admin_tools)
-            ) else 0
-        else:
-            features['system_account_admin_tool'] = 0
-        
         # Process ID features
         pid = event.get('ProcessId', 0) or event.get('processId', 0)
         parent_pid = event.get('ParentProcessId', 0) or event.get('parentProcessId', 0)
@@ -253,56 +240,6 @@ class ComprehensiveFeatureExtractor:
             'sc create', 'sc start', 'sc stop', 'sc config', 'net start', 'net stop'
         ]) else 0
         
-        # Features based on Claude reasoning insights
-        # File operations in suspicious locations
-        suspicious_paths = [
-            r'c:\\users\\public',
-            r'c:\\users\\public\\downloads',
-            r'c:\\windows\\temp',
-            r'c:\\temp',
-            r'appdata\\local\\temp',
-            r'appdata\\roaming',
-        ]
-        features['suspicious_path_operation'] = 0
-        for path_pattern in suspicious_paths:
-            if path_pattern in cmdline_lower:
-                features['suspicious_path_operation'] = 1
-                break
-        
-        # System files being modified (hosts file, etc.)
-        system_file_mods = [
-            r'\\drivers\\etc\\hosts',
-            r'\\system32\\drivers\\etc\\hosts',
-            r'\\windows\\system32\\config\\sam',
-            r'\\windows\\system32\\config\\system',
-        ]
-        features['system_file_modification'] = 0
-        for file_pattern in system_file_mods:
-            if file_pattern in cmdline_lower:
-                features['system_file_modification'] = 1
-                break
-        
-        # Compression/archiving operations (can be data staging)
-        features['compression_operation'] = 1 if any(
-            cmd in cmdline_lower for cmd in [
-                'compress-archive', 'zip', 'tar', '7z', 'rar', 'archive'
-            ]
-        ) else 0
-        
-        # Process discovery commands
-        features['process_discovery'] = 1 if any(
-            cmd in cmdline_lower for cmd in [
-                'tasklist', 'get-process', 'ps ', 'wmic process', 'netstat'
-            ]
-        ) else 0
-        
-        # Network discovery commands
-        features['network_discovery'] = 1 if any(
-            cmd in cmdline_lower for cmd in [
-                'net view', 'net share', 'nslookup', 'ping', 'tracert'
-            ]
-        ) else 0
-        
         return features
     
     def _extract_process_features(self, event: Dict[str, Any]) -> Dict[str, Any]:
@@ -350,31 +287,6 @@ class ComprehensiveFeatureExtractor:
                 if parent_pattern in parent_exe and child_pattern in image_exe:
                     features['suspicious_parent_child'] = 1
                     break
-            
-            # Features based on Claude reasoning insights
-            # Explorer launched by userinit.exe - suspicious for lateral_movement
-            # (Explorer should usually be executed by user GUI, not command line)
-            features['explorer_from_userinit'] = 1 if (
-                'userinit.exe' in parent_exe and 'explorer.exe' in image_exe
-            ) else 0
-            
-            # Explorer launched by non-standard parent (should be winlogon or userinit normally)
-            features['explorer_unusual_parent'] = 1 if (
-                'explorer.exe' in image_exe and 
-                parent_exe not in ['winlogon.exe', 'userinit.exe', 'explorer.exe']
-            ) else 0
-            
-            # System binary launched from explorer (often suspicious)
-            system_binaries = ['cmd.exe', 'powershell.exe', 'wmic.exe', 'reg.exe', 'sc.exe']
-            features['system_binary_from_explorer'] = 1 if (
-                'explorer.exe' in parent_exe and 
-                any(binary in image_exe for binary in system_binaries)
-            ) else 0
-            
-            # WMI Provider launched by svchost (normal) vs other parents (suspicious)
-            features['wmiprvse_unusual_parent'] = 1 if (
-                'wmiprvse.exe' in image_exe and 'svchost.exe' not in parent_exe
-            ) else 0
         
         # Command-line similarity (if parent command line available)
         cmdline = event.get('CommandLine', '') or event.get('commandLine', '')

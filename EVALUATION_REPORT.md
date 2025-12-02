@@ -11,6 +11,7 @@ This report evaluates the performance of the LOTL (Living Off The Land) attack d
 1. **Random Forest**: 100 trees with balanced class weights
 2. **Neural Network**: 2-layer MLP (128→64→2) with dropout
 3. **Ensemble**: Weighted voting based on prediction confidence
+4. **Disagreement Detector (V2)**: Optional model to detect label disagreements
 
 ### Features
 
@@ -19,10 +20,27 @@ This report evaluates the performance of the LOTL (Living Off The Land) attack d
 - **Sysmon Features**: 15+ features from event metadata
 - **Command-Line Features**: 20+ features from command analysis
 - **Text Embeddings**: 14 features from lightweight sentence transformer
+- **Claude Reasoning Insights**: 10+ new features inspired by Claude's reasoning:
+  - Explorer from userinit.exe (lateral movement)
+  - System account admin tool usage
+  - Suspicious path operations
+  - System file modifications
+  - Compression/archiving operations
 
-**Total Features**: ~84 features per event
+**Total Features**: ~94 features per event (increased from ~84)
 
-## Performance Metrics
+## Evaluation Methodology
+
+### K-Fold Cross-Validation
+
+All models are evaluated using **5-fold cross-validation** for robust performance estimation:
+
+- **Reproducible Splits**: Same random seed (42) ensures consistent folds
+- **Stratified Splits**: Maintains class balance across folds
+- **Same Folds**: Neural network training uses identical k-fold splits
+- **Average Metrics**: Reported as mean ± std across folds
+
+### Performance Metrics
 
 ### Target vs Achieved
 
@@ -103,12 +121,21 @@ Based on the architecture and feature engineering, we anticipate these failure m
 - **Example**: Abuse of newly released Windows tools
 - **Mitigation**: Continuous retraining and feature updates
 
+## Key Improvements (V2)
+
+1. **K-Fold Cross-Validation**: Robust evaluation methodology
+2. **Enhanced Features**: Added 10+ features based on Claude reasoning insights
+3. **Improved Explanations**: Natural language with 3+ features and attack types
+4. **Disagreement Detector**: V2 model for ambiguous cases
+5. **Data Augmentation**: Optional augmentation for generalization
+6. **LLM Distillation**: Notebook for training student LLM
+
 ## Key Limitations
 
 1. **Dataset Size**: Currently ~250 events (small but sufficient for proof of concept)
 2. **Windows Focus**: Designed specifically for Windows Sysmon events
 3. **Feature Engineering**: Relies on hand-crafted features (though comprehensive)
-4. **Explainability**: Explanations are heuristic-based, not from actual LLM distillation
+4. **LLM Distillation**: Student LLM training provided but not fully integrated
 5. **Temporal Context**: Single-event analysis (no sequence modeling)
 
 ## Comparison with Claude-Sonnet-4.5
