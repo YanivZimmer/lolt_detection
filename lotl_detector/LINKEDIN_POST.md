@@ -12,7 +12,7 @@
 
 ---
 
-🔒 **Detecting Living Off The Land Attacks: How We Built a 30x Cheaper, 250x Faster Alternative to LLMs**
+🔒 **Detecting Living Off The Land Attacks: How We Built a 30x Cheaper, 50x Faster Alternative to LLMs**
 
 Living Off The Land (LOTL) attacks are sneaky. They use legitimate Windows tools like PowerShell, cmd.exe, and WMI in malicious ways, making them nearly invisible to traditional security tools.
 
@@ -72,7 +72,7 @@ Sometimes the best AI solution is the one that doesn't need an LLM.
 **Visual**: A side-by-side comparison showing:
 - Left: LLM API calls (slow, expensive, cloud-based)
 - Right: Local ensemble model (fast, cheap, on-premise)
-- Metrics overlaid: Speed (250x), Cost (30x), Accuracy (comparable)
+- Metrics overlaid: Speed (50x), Cost (30x), Accuracy (comparable)
 
 **Alternative**: Feature importance visualization showing top 10 features that detect LOTL attacks (e.g., obfuscation score, native binary abuse, command complexity)
 

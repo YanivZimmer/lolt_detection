@@ -175,10 +175,7 @@ def train_with_kfold(
             "f1": float(avg_f1),
             "f1_std": float(std_f1),
         },
-        "performance": {
-            "avg_latency_ms": float(avg_latency_ms),
-            "avg_throughput_events_per_sec": float(avg_throughput),
-        },
+
         "fold_results": fold_results,
     }
 

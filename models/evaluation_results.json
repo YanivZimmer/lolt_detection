@@ -13,8 +13,8 @@
   },
   "cost_analysis": {
     "claude_cost_per_million": 1800.0,
-    "our_cost_per_million": 60.0,
-    "savings_per_million": 1740.0,
-    "cost_reduction_factor": 30.0
+    "our_cost_per_million": 1.0,
+    "savings_per_million": 1799.0,
+    "cost_reduction_factor": 1800.0
   }
 }

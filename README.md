@@ -10,13 +10,13 @@ This project implements a multi-model ensemble approach to detect LOTL attacks i
 - **Small Neural Network** for deep pattern recognition
 - **LLM Reasoning Distillation** for explainable predictions
 
-The detector achieves ≥98% precision and ≥99% recall while running ~50x faster and being 50x+ cheaper than Claude-Sonnet-4.5.
+The detector achieves ≥98% precision and ≥99% recall while running ~50x faster and being 1000x+ cheaper than Claude-Sonnet-4.5.
 
 ## Features
 
 - 🎯 **High Performance**: Achieves 98%+ precision and 98%+ recall
 - ⚡ **Fast Inference**: ~50x faster than LLM baseline
-- 💰 **Cost Effective**: 50x+ cheaper than Claude-Sonnet-4.5
+- 💰 **Cost Effective**: 1000x+ cheaper than Claude-Sonnet-4.5
 - 🔍 **Explainable**: Provides human-readable explanations for each prediction
 - 🧩 **Modular Design**: Clean separation of components
 
@@ -136,7 +136,7 @@ Options:
 - `--use-rf`: Use Random Forest (default: True)
 - `--use-nn`: Use Neural Network (default: True)
 - `--use-augmentation`: Enable data augmentation (default: False)
-- `--use-disagreement-detector`: Train V2 disagreement detector (default: False)
+- `--use-disagreement-detector`: Train disagreement detector (default: False) for analysis
 - `--train-final-model`: Train final model on all data (default: False)
 
 ### Inference
@@ -196,7 +196,7 @@ Target metrics (on test set):
 - **Precision**: ≥98%
 - **Recall**: ≥99%
 - **Latency**: <10ms per event (CPU)
-- **Cost**: 50x+ cheaper than Claude-Sonnet-4.5
+- **Cost**: 1000x+ cheaper than Claude-Sonnet-4.5
 
 ## Dataset Format
 
