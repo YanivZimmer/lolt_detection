@@ -241,8 +241,7 @@ This is a research project. For questions or improvements, please open an issue.
 
 ## License
 
-[Specify your license]
-
+MIT standard licence
 ## Acknowledgments
 
 - Based on research from "LOLWTC: A Deep Learning Approach for Detecting Living Off the Land Attacks"
