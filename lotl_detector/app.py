@@ -1,6 +1,7 @@
 """
 Chainlit app for interactive LOTL detection.
 """
+
 import chainlit as cl
 import json
 from pathlib import Path
@@ -21,9 +22,9 @@ async def start():
     await cl.Message(
         content="Loading LOTL detection model...",
     ).send()
-    
+
     global ensemble_model
-    
+
     # Try to load the model
     model_dir = Path("models")
     if model_dir.exists() and (model_dir / "random_forest.pkl").exists():
@@ -43,7 +44,7 @@ async def start():
             content="⚠️ Model not found. Please train the model first using `make train`",
         ).send()
         ensemble_model = None
-    
+
     # Show example
     await cl.Message(
         content="""
@@ -85,53 +86,55 @@ Example event format:
 async def main(message: cl.Message):
     """Process incoming messages."""
     global ensemble_model
-    
+
     if ensemble_model is None:
         await cl.Message(
             content="❌ Model not loaded. Please train the model first using `make train`",
         ).send()
         return
-    
+
     try:
         # Parse JSON event
         event_text = message.content.strip()
-        
+
         # Try to extract JSON from markdown code blocks first
-        if '```json' in event_text:
-            json_start = event_text.find('```json') + 7
-            json_end = event_text.find('```', json_start)
+        if "```json" in event_text:
+            json_start = event_text.find("```json") + 7
+            json_end = event_text.find("```", json_start)
             event_text = event_text[json_start:json_end].strip()
-        elif '```' in event_text:
-            json_start = event_text.find('```') + 3
-            json_end = event_text.find('```', json_start)
+        elif "```" in event_text:
+            json_start = event_text.find("```") + 3
+            json_end = event_text.find("```", json_start)
             if json_end > json_start:
                 event_text = event_text[json_start:json_end].strip()
-        
+
         # Parse JSON (handle escaped backslashes properly)
         event = json.loads(event_text)
-        
+
         # Sanitize event (remove metadata fields)
         event = sanitize_event_for_inference(event)
-        
+
         # Get prediction with explanations (RF + optionally LLM)
         use_llm = False  # Can be made configurable
         results = ensemble_model.predict_with_explanation([event], use_llm_explanation=use_llm)
         result = results[0]
-        
+
         # Format response
-        prediction = result['prediction']
-        confidence = result['confidence']
-        rf_explanation = result.get('rf_explanation', result.get('explanation', 'No explanation available'))
-        llm_explanation = result.get('llm_explanation')
-        
+        prediction = result["prediction"]
+        confidence = result["confidence"]
+        rf_explanation = result.get(
+            "rf_explanation", result.get("explanation", "No explanation available")
+        )
+        llm_explanation = result.get("llm_explanation")
+
         # Determine color/icon
-        if prediction == 'malicious':
+        if prediction == "malicious":
             icon = "🔴"
             color = "red"
         else:
             icon = "🟢"
             color = "green"
-        
+
         # Create response message
         response = f"""
 {icon} **Prediction: {prediction.upper()}**
@@ -145,7 +148,7 @@ async def main(message: cl.Message):
 {rf_explanation}
 
 """
-        
+
         # Add LLM explanation if available
         if llm_explanation:
             response += f"""
@@ -156,7 +159,7 @@ async def main(message: cl.Message):
 {llm_explanation}
 
 """
-        
+
         response += f"""
 ---
 
@@ -166,11 +169,11 @@ async def main(message: cl.Message):
 - User: `{event.get('User', 'N/A')}`
 - Integrity Level: `{event.get('IntegrityLevel', 'N/A')}`
 """
-        
+
         await cl.Message(
             content=response,
         ).send()
-        
+
     except json.JSONDecodeError as e:
         await cl.Message(
             content=f"❌ Invalid JSON format. Please provide a valid JSON event.\n\nError: {str(e)}",
@@ -190,10 +193,9 @@ async def on_action(action):
         "CommandLine": "powershell.exe -enc SQBuAHYAbwBrAGUALQBXAGUAYgBSAGUAcQB1AGUAcwB0AA==",
         "Image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
         "User": "CORP\\jsmith",
-        "IntegrityLevel": "Medium"
+        "IntegrityLevel": "Medium",
     }
-    
+
     await cl.Message(
         content=f"Example event:\n```json\n{json.dumps(example_event, indent=2)}\n```",
     ).send()
-

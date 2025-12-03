@@ -1,8 +1,8 @@
 import pickle
 
-file_path = 'models/feature_names.pkl'
+file_path = "models/feature_names.pkl"
 try:
-    with open(file_path, 'rb') as f:
+    with open(file_path, "rb") as f:
         unpickled_list = pickle.load(f)
     print("List unpickled successfully:")
     print(unpickled_list)
