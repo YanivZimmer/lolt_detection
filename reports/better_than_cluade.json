@@ -1,0 +1,152 @@
+[
+  {
+    "index": 50,
+    "ground_truth": "malicious",
+    "command_line": "powershell.exe -command Compress-Archive -Path C:\\Users\\pbeesly\\Documents\\FinancialReports\\* -DestinationPath C:\\Users\\pbeesly\\AppData\\Local\\Temp\\archive.zip",
+    "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "user": "DMEVALS\\pbeesly",
+    "parent_image": "C:\\Windows\\explorer.exe",
+    "model_prediction": "malicious",
+    "claude_prediction": "benign"
+  },
+  {
+    "index": 59,
+    "ground_truth": "malicious",
+    "command_line": "C:\\Windows\\explorer.exe",
+    "image": "C:\\Windows\\explorer.exe",
+    "user": "NT AUTHORITY\\SYSTEM",
+    "parent_image": "C:\\Windows\\System32\\userinit.exe",
+    "model_prediction": "malicious",
+    "claude_prediction": "benign"
+  },
+  {
+    "index": 60,
+    "ground_truth": "malicious",
+    "command_line": "C:\\Windows\\explorer.exe",
+    "image": "C:\\Windows\\explorer.exe",
+    "user": "DMEVALS\\pbeesly",
+    "parent_image": "C:\\Windows\\System32\\userinit.exe",
+    "model_prediction": "malicious",
+    "claude_prediction": "benign"
+  },
+  {
+    "index": 73,
+    "ground_truth": "benign",
+    "command_line": "notepad.exe C:\\Windows\\System32\\drivers\\etc\\hosts",
+    "image": "C:\\Windows\\System32\\notepad.exe",
+    "user": "WORKSTATION\\user",
+    "parent_image": "C:\\Windows\\explorer.exe",
+    "model_prediction": "benign",
+    "claude_prediction": "malicious"
+  },
+  {
+    "index": 76,
+    "ground_truth": "malicious",
+    "command_line": "cmd.exe /c tasklist /v",
+    "image": "C:\\Windows\\System32\\cmd.exe",
+    "user": "DMEVALS\\pbeesly",
+    "parent_image": "C:\\Windows\\explorer.exe",
+    "model_prediction": "malicious",
+    "claude_prediction": "benign"
+  },
+  {
+    "index": 97,
+    "ground_truth": "malicious",
+    "command_line": "net view \\\\fileserver",
+    "image": "C:\\Windows\\System32\\cmd.exe",
+    "user": "DMEVALS\\pbeesly",
+    "parent_image": "C:\\Windows\\explorer.exe",
+    "model_prediction": "malicious",
+    "claude_prediction": "benign"
+  },
+  {
+    "index": 145,
+    "ground_truth": "malicious",
+    "command_line": "icacls C:\\Users\\Default\\AppData\\Local\\Microsoft\\Windows\\INetCache /reset /t",
+    "image": "C:\\Windows\\System32\\icacls.exe",
+    "user": "NT AUTHORITY\\NETWORK SERVICE",
+    "parent_image": "C:\\Windows\\System32\\cmd.exe",
+    "model_prediction": "malicious",
+    "claude_prediction": "benign"
+  },
+  {
+    "index": 148,
+    "ground_truth": "malicious",
+    "command_line": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe -Embedding",
+    "image": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe",
+    "user": "DMEVALS\\pbeesly",
+    "parent_image": "C:\\Windows\\System32\\svchost.exe",
+    "model_prediction": "malicious",
+    "claude_prediction": "benign"
+  },
+  {
+    "index": 174,
+    "ground_truth": "malicious",
+    "command_line": "C:\\Windows\\explorer.exe",
+    "image": "C:\\Windows\\explorer.exe",
+    "user": "NT AUTHORITY\\NETWORK SERVICE",
+    "parent_image": "C:\\Windows\\System32\\userinit.exe",
+    "model_prediction": "malicious",
+    "claude_prediction": "benign"
+  },
+  {
+    "index": 181,
+    "ground_truth": "malicious",
+    "command_line": "C:\\Windows\\explorer.exe",
+    "image": "C:\\Windows\\explorer.exe",
+    "user": "DMEVALS\\pbeesly",
+    "parent_image": "C:\\Windows\\System32\\userinit.exe",
+    "model_prediction": "malicious",
+    "claude_prediction": "benign"
+  },
+  {
+    "index": 199,
+    "ground_truth": "malicious",
+    "command_line": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe -Embedding",
+    "image": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe",
+    "user": "DMEVALS\\pbeesly",
+    "parent_image": "C:\\Windows\\System32\\svchost.exe",
+    "model_prediction": "malicious",
+    "claude_prediction": "benign"
+  },
+  {
+    "index": 202,
+    "ground_truth": "malicious",
+    "command_line": "powershell.exe  Get-Process | Select-Object Name,Id,Path",
+    "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "user": "DMEVALS\\pbeesly",
+    "parent_image": "C:\\Windows\\System32\\cmd.exe",
+    "model_prediction": "malicious",
+    "claude_prediction": "benign"
+  },
+  {
+    "index": 232,
+    "ground_truth": "malicious",
+    "command_line": "C:\\Windows\\explorer.exe",
+    "image": "C:\\Windows\\explorer.exe",
+    "user": "DMEVALS\\pbeesly",
+    "parent_image": "C:\\Windows\\System32\\userinit.exe",
+    "model_prediction": "malicious",
+    "claude_prediction": "benign"
+  },
+  {
+    "index": 241,
+    "ground_truth": "malicious",
+    "command_line": "C:\\Windows\\explorer.exe",
+    "image": "C:\\Windows\\explorer.exe",
+    "user": "DMEVALS\\pbeesly",
+    "parent_image": "C:\\Windows\\System32\\userinit.exe",
+    "model_prediction": "malicious",
+    "claude_prediction": "benign"
+  },
+  {
+    "index": 246,
+    "ground_truth": "benign",
+    "command_line": "wscript.exe C:\\Users\\Public\\Downloads\\vbscript.vbs",
+    "image": "C:\\Windows\\System32\\wscript.exe",
+    "user": "CORP\\jsmith",
+    "parent_image": "C:\\Windows\\explorer.exe",
+    "model_prediction": "benign",
+    "claude_prediction": "malicious"
+  }
+]

@@ -1,0 +1,90 @@
+{
+  "overall_metrics": {
+    "accuracy": 0.984375,
+    "precision": 0.9782608695652174,
+    "recall": 0.9926470588235294,
+    "f1": 0.9854014598540146
+  },
+  "average_metrics": {
+    "accuracy": 0.9843137254901961,
+    "precision": 0.9793103448275862,
+    "recall": 0.9925925925925926,
+    "f1": 0.9857142857142858,
+    "f1_std": 0.02857142857142856
+  },
+  "fold_results": [
+    {
+      "fold": 1,
+      "metrics": {
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "training_time": 9.326753854751587,
+      "batch_inference_time": 0.5728058749809861,
+      "avg_latency_ms": 29.79950840526726,
+      "throughput_events_per_sec": 90.78119179857592
+    },
+    {
+      "fold": 2,
+      "metrics": {
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "training_time": 4.607658863067627,
+      "batch_inference_time": 0.5277254579996224,
+      "avg_latency_ms": 25.813749997178093,
+      "throughput_events_per_sec": 96.6411591991768
+    },
+    {
+      "fold": 3,
+      "metrics": {
+        "accuracy": 0.9215686274509803,
+        "precision": 0.896551724137931,
+        "recall": 0.9629629629629629,
+        "f1": 0.9285714285714286
+      },
+      "training_time": 4.59172511100769,
+      "batch_inference_time": 0.560510333016282,
+      "avg_latency_ms": 25.973629095824435,
+      "throughput_events_per_sec": 90.98850992728894
+    },
+    {
+      "fold": 4,
+      "metrics": {
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "training_time": 4.842926263809204,
+      "batch_inference_time": 0.5394652910181321,
+      "avg_latency_ms": 26.824991495232098,
+      "throughput_events_per_sec": 94.53805619958935
+    },
+    {
+      "fold": 5,
+      "metrics": {
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "training_time": 4.56610894203186,
+      "batch_inference_time": 0.485169791005319,
+      "avg_latency_ms": 25.96957499627024,
+      "throughput_events_per_sec": 105.11783904418913
+    }
+  ],
+  "config": {
+    "n_splits": 5,
+    "random_seed": 42,
+    "use_augmentation": false,
+    "use_disagreement_detector": false,
+    "num_events": 256,
+    "num_disagreements": 0
+  }
+}

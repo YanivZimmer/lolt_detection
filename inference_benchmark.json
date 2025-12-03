@@ -1,0 +1,10 @@
+{
+  "avg_inference_ms": 19.897020800272003,
+  "std_inference_ms": 0.9776039054325085,
+  "min_inference_ms": 18.65708301193081,
+  "max_inference_ms": 21.56679198378697,
+  "avg_per_event_ms": 0.07772273750106251,
+  "avg_feature_extraction_ms": 10.132544580264948,
+  "total_events": 256,
+  "throughput_events_per_sec": 12866.247795071931
+}
