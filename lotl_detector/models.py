@@ -7,9 +7,25 @@ from typing import Dict, Any, List, Optional, Tuple
 import pickle
 from pathlib import Path
 
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
+try:
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.preprocessing import StandardScaler, LabelEncoder
+    from sklearn.metrics import (
+        classification_report,
+        confusion_matrix,
+        accuracy_score,
+        precision_score,
+        recall_score,
+        f1_score,
+    )
+    SKLEARN_AVAILABLE = True
+    SKLEARN_IMPORT_ERROR = None
+except ImportError as exc:  # pragma: no cover
+    SKLEARN_AVAILABLE = False
+    SKLEARN_IMPORT_ERROR = exc
+    RandomForestClassifier = None  # type: ignore
+    StandardScaler = None  # type: ignore
+    LabelEncoder = None  # type: ignore
 
 
 class RandomForestModel:
@@ -29,6 +45,10 @@ class RandomForestModel:
             random_state: Random seed
             n_jobs: Number of parallel jobs
         """
+        if not SKLEARN_AVAILABLE:
+            raise ImportError(
+                "scikit-learn is required for RandomForestModel but is not installed."
+            ) from SKLEARN_IMPORT_ERROR
         self.model = RandomForestClassifier(
             n_estimators=n_estimators,
             max_depth=max_depth,
@@ -212,6 +232,10 @@ class SmallNeuralNetwork:
             dropout: Dropout rate
             random_state: Random seed
         """
+        if not SKLEARN_AVAILABLE:
+            raise ImportError(
+                "scikit-learn is required for SmallNeuralNetwork preprocessing but is not installed."
+            ) from SKLEARN_IMPORT_ERROR
         self.input_dim = input_dim
         self.hidden_dims = hidden_dims
         self.dropout = dropout
@@ -389,6 +413,10 @@ def evaluate_model(y_true: List[str], y_pred: List[str], model_name: str = "Mode
         y_pred: Predicted labels
         model_name: Name of the model for reporting
     """
+    if not SKLEARN_AVAILABLE:
+        raise ImportError(
+            "scikit-learn metrics are required for evaluate_model but are not installed."
+        ) from SKLEARN_IMPORT_ERROR
     print(f"\n{'='*60}")
     print(f"Evaluation Results for {model_name}")
     print(f"{'='*60}\n")

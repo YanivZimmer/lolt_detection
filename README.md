@@ -178,7 +178,7 @@ The system extracts comprehensive features from Sysmon events:
 
 ### Models
 
-1. **Random Forest**: 100 trees with balanced class weights
+1. **Random Forest**: 100 trees with balanced class weights (The only one that used on default)
 2. **Neural Network**: 2-layer MLP (128→64→2) with dropout
 3. **Ensemble**: Weighted voting based on prediction confidence
 4. **Disagreement Detector (V2)**: Optional model to detect cases where Claude and ground truth disagree
@@ -192,10 +192,10 @@ The system extracts comprehensive features from Sysmon events:
 ## Performance
 
 Target metrics (on test set):
-- **Precision**: ≥90%
-- **Recall**: ≥95%
-- **Latency**: <2ms per event (CPU)
-- **Cost**: 30x+ cheaper than Claude-Sonnet-4.5
+- **Precision**: ≥98%
+- **Recall**: ≥99%
+- **Latency**: <10ms per event (CPU)
+- **Cost**: 50x+ cheaper than Claude-Sonnet-4.5
 
 ## Dataset Format
 

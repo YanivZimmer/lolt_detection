@@ -44,7 +44,7 @@ class LOTLEnsemble:
         self.ensemble_method = ensemble_method
         self.top_k_features: Optional[int] = top_k_features
         
-        self.random_forest = RandomForestModel(n_estimators=5, max_depth=6, random_state=42) if use_random_forest else None
+        self.random_forest = RandomForestModel(n_estimators=6, max_depth=6, random_state=42) if use_random_forest else None
         self.neural_network = None  # Will be initialized after we know input_dim
         self.llm_distiller = LLMDistiller() if use_llm_reasoning else None
         self.feature_extractor = ComprehensiveFeatureExtractor()
@@ -358,8 +358,8 @@ class LOTLEnsemble:
         parent_image = event.get('ParentImage', '') or event.get('parentImage', '')
         user = event.get('User', '') or event.get('user', '')
         
-        # Determine attack type
-        attack_type = self._infer_attack_type(event, features)
+        # Determine attack type using top contributing features only
+        attack_type = self._infer_attack_type(top_5_features)
         
         # Build explanation with 5+ features
         explanation_parts = []
@@ -505,47 +505,72 @@ class LOTLEnsemble:
         
         return explanations[0] if explanations else ""
     
-    def _infer_attack_type(self, event: Dict[str, Any], features: np.ndarray) -> str:
+    def _infer_attack_type(self, top_features: List[Dict[str, Any]]) -> str:
         """
-        Infer attack type from event and features.
+        Infer attack type using weighted contributions from top features.
         
         Args:
-            event: Event dictionary
-            features: Feature vector
+            top_features: List of dicts with 'name' and 'contribution'
             
         Returns:
-            Attack type string or empty string
+            Attack type string or 'attack type uncertain'
         """
-        # Map feature names to attack types
+        if not top_features:
+            return "attack type uncertain"
+        
+        from collections import defaultdict
+        
+        # Map feature names (or substrings) to high-level attack types
         feature_to_attack = {
             'apt_lateral_movement': 'lateral_movement',
+            'lateral_movement': 'lateral_movement',
             'apt_credential_access': 'credential_access',
+            'credential': 'credential_access',
             'apt_persistence': 'persistence',
+            'persistence': 'persistence',
             'apt_defense_evasion': 'defense_evasion',
+            'defense_evasion': 'defense_evasion',
             'apt_collection': 'collection',
+            'collection': 'collection',
             'apt_exfiltration': 'exfiltration',
+            'exfiltration': 'exfiltration',
             'explorer_from_userinit': 'lateral_movement',
             'system_file_modification': 'defense_evasion',
             'compression_operation': 'data_staging',
+            'data_staging': 'data_staging',
             'process_discovery': 'discovery',
             'network_discovery': 'discovery',
+            'discovery': 'discovery',
         }
         
-        # Check features for attack type indicators
-        feature_dict = dict(zip(self.feature_names, features))
+        attack_scores = defaultdict(float)
         
-        attack_types = []
-        for feat_name, attack_type in feature_to_attack.items():
-            if feat_name in feature_dict:# and feature_dict[feat_name] > 0:
-                attack_types.append(attack_type)
-                
-        # Return most common or first
-        if attack_types:
-            from collections import Counter
-            most_common = Counter(attack_types).most_common(1)
-            return most_common[0][0] if most_common else ''
+        for feature in top_features[:5]:
+            feat_name = feature.get('name', '')
+            contribution = float(feature.get('contribution', 0.0))
+            if not feat_name or contribution == 0:
+                continue
+            
+            matched_attack = None
+            if feat_name in feature_to_attack:
+                matched_attack = feature_to_attack[feat_name]
+            else:
+                # Fallback to substring matching (handles feature variants)
+                lower_name = feat_name.lower()
+                for key, attack in feature_to_attack.items():
+                    if key in lower_name:
+                        matched_attack = attack
+                        break
+            
+            if matched_attack:
+                attack_scores[matched_attack] += abs(contribution)
         
-        return ''
+        if not attack_scores:
+            return "attack type uncertain"
+        
+        # Return attack type with highest total contribution
+        sorted_attacks = sorted(attack_scores.items(), key=lambda item: item[1], reverse=True)
+        return sorted_attacks[0][0] if sorted_attacks else "attack type uncertain"
     
     def save(self, directory: str):
         """
