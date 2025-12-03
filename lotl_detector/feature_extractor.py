@@ -32,7 +32,11 @@ class ComprehensiveFeatureExtractor:
         self.survivalism_extractor = SurvivalismFeatureExtractor()
         self.obfuscation_detector = ObfuscationDetector()
         self.use_text_embeddings = use_text_embeddings
-        
+
+        # Optional: limit feature extraction to a selected subset (set externally)
+        # Used to avoid computing expensive features (e.g., text embeddings) when not needed.
+        self.selected_feature_names: Optional[set] = None
+
         # Use lightweight embedding model
         if embedding_model is None:
             embedding_model = 'sentence-transformers/all-MiniLM-L6-v2'
@@ -50,6 +54,54 @@ class ComprehensiveFeatureExtractor:
                 self.use_text_embeddings = False
         return self._embedding_model
     
+    def extract_all_features1(self, event: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract all features in the list of feature names: event_hour     ,  domain_length  ,     user_length     ,
+ cmdline_word_count      ,
+process_id     ,
+obfuscation_score     ,
+exe_name_length       ,
+ is_windows_binary        ,
+obfuscation_intensity       ,
+cmdline_char_count       
+    
+        """
+        features = {}
+        event_time=self._extract_event_time(event)
+        features['event_hour'], features['is_off_hours'] = event_time['event_hour'], event_time['is_off_hours']
+        # features['domain_length'] = event.get('DomainLength', 0)
+        # features['user_length'] = event.get('UserLength', 0)
+        # features['cmdline_word_count'] = event.get('CmdlineWordCount', 0)
+        # features['process_id'] = event.get('ProcessId', 0)
+        # features['obfuscation_score'] = event.get('ObfuscationScore', 0)
+        # features['exe_name_length'] = event.get('ExeNameLength', 0)
+        # features['is_windows_binary'] = event.get('IsWindowsBinary', 0)
+        # features['obfuscation_intensity'] = event.get('ObfuscationIntensity', 0)
+        # features['cmdline_char_count'] = event.get('CmdlineCharCount', 0)
+        #print("extracted here")
+        return features
+    def _extract_event_time(self, event: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract event time features."""
+        event_time = event.get('EventTime', '') or event.get('eventTime', '')
+        features = {}
+        if event_time:
+            try:
+                # Extract hour from timestamp
+                hour_match = re.search(r'(\d{2}):\d{2}:\d{2}', event_time)
+                if hour_match:
+                    hour = int(hour_match.group(1))
+                    features['event_hour'] = hour
+                    features['is_off_hours'] = 1 if hour < 6 or hour > 22 else 0
+                else:
+                    features['event_hour'] = 12
+                    features['is_off_hours'] = 0
+            except:
+                features['event_hour'] = 12
+                features['is_off_hours'] = 0
+        else:
+            features['event_hour'] = 12
+            features['is_off_hours'] = 0
+        return features
     def extract_all_features(self, event: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extract all features from a Sysmon event.
@@ -384,7 +436,7 @@ class ComprehensiveFeatureExtractor:
         else:
             features['parent_cmdline_similarity'] = 0
         
-        return features
+        return {}#features
     
     def _extract_text_embedding_features(self, event: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -392,7 +444,13 @@ class ComprehensiveFeatureExtractor:
         Returns a reduced-dimension embedding (e.g., PCA or mean pooling).
         """
         features = {}
-        
+
+        # If a selected feature subset is defined and none of them are text embedding features,
+        # completely skip embedding computation to save latency.
+        if self.selected_feature_names is not None:
+            if not any(name.startswith("text_embedding_") for name in self.selected_feature_names):
+                return features
+
         model = self._get_embedding_model()
         if not model:
             return features
@@ -427,35 +485,27 @@ class ComprehensiveFeatureExtractor:
             try:
                 # Get embedding (384 dimensions for all-MiniLM-L6-v2)
                 embedding = model.encode(combined_text, convert_to_numpy=True)
-                
-                # Reduce dimensionality by taking statistics
-                # Use mean, std, min, max of embedding dimensions
+
+                # Reduce dimensionality aggressively: keep ONLY 4 lightweight features
+                # (mean, std, min, max) to minimize inference cost.
                 features['text_embedding_mean'] = float(np.mean(embedding))
                 features['text_embedding_std'] = float(np.std(embedding))
                 features['text_embedding_min'] = float(np.min(embedding))
                 features['text_embedding_max'] = float(np.max(embedding))
                 
-                # Use first 10 dimensions as features (for manageable feature count)
-                for i in range(min(10, len(embedding))):
-                    features[f'text_embedding_dim_{i}'] = float(embedding[i])
-                
             except Exception as e:
                 print(f"Warning: Failed to generate text embedding: {e}")
-                # Return zero features
+                # Return zero features (4 only)
                 features['text_embedding_mean'] = 0.0
                 features['text_embedding_std'] = 0.0
                 features['text_embedding_min'] = 0.0
                 features['text_embedding_max'] = 0.0
-                for i in range(10):
-                    features[f'text_embedding_dim_{i}'] = 0.0
         else:
             # Empty text
             features['text_embedding_mean'] = 0.0
             features['text_embedding_std'] = 0.0
             features['text_embedding_min'] = 0.0
             features['text_embedding_max'] = 0.0
-            for i in range(10):
-                features[f'text_embedding_dim_{i}'] = 0.0
         
         return features
     

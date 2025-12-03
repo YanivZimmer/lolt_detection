@@ -5,6 +5,7 @@ import chainlit as cl
 import json
 from pathlib import Path
 from typing import Dict, Any
+import traceback
 
 from ensemble import LOTLEnsemble
 from data_loader import sanitize_event_for_inference
@@ -55,11 +56,26 @@ Example event format:
 ```json
 {
   "EventID": 1,
-  "CommandLine": "cmd.exe /c dir C:\\Users",
-  "Image": "C:\\Windows\\System32\\cmd.exe",
-  "User": "CORP\\jsmith",
-  "IntegrityLevel": "Medium"
+  "EventTime": "2020-05-01 22:56:35",
+  "UtcTime": "2020-05-01T22:56:35.000Z",
+  "Hostname": "UTICA.dmevals.local",
+  "Channel": "Microsoft-Windows-Sysmon/Operational",
+  "SourceImage": "C:WindowsSystem32cmd.exe",
+  "CommandLine": "cmd.exe /c wevtutil cl Application",
+  "ProcessId": "1150",
+  "ProcessGUID": "{6bbf237a-047e-5eac-047e-00000000047e}",
+  "ParentImage": "C:Windowsexplorer.exe",
+  "ParentProcessId": "420",
+  "ParentProcessGUID": "{6bbf237a-01a4-5eac-01a4-0000000001a4}",
+  "ParentCommandLine": "C:Windowsexplorer.exe",
+  "User": "NT AUTHORITYNETWORK SERVICE",
+  "Domain": "NT AUTHORITY",
+  "AccountName": "NETWORK SERVICE",
+  "IntegrityLevel": "Medium",
+  "CurrentDirectory": "C:WindowsSystem32\"",
+  "LogonId": "0x3e7"
 }
+
 ```
         """,
     ).send()
@@ -80,33 +96,33 @@ async def main(message: cl.Message):
         # Parse JSON event
         event_text = message.content.strip()
         
-        # Try to parse as JSON
-        if event_text.startswith('{'):
-            event = json.loads(event_text)
-        else:
-            # Try to extract JSON from markdown code blocks
-            if '```json' in event_text:
-                json_start = event_text.find('```json') + 7
-                json_end = event_text.find('```', json_start)
+        # Try to extract JSON from markdown code blocks first
+        if '```json' in event_text:
+            json_start = event_text.find('```json') + 7
+            json_end = event_text.find('```', json_start)
+            event_text = event_text[json_start:json_end].strip()
+        elif '```' in event_text:
+            json_start = event_text.find('```') + 3
+            json_end = event_text.find('```', json_start)
+            if json_end > json_start:
                 event_text = event_text[json_start:json_end].strip()
-            elif '```' in event_text:
-                json_start = event_text.find('```') + 3
-                json_end = event_text.find('```', json_start)
-                event_text = event_text[json_start:json_end].strip()
-            
-            event = json.loads(event_text)
+        
+        # Parse JSON (handle escaped backslashes properly)
+        event = json.loads(event_text)
         
         # Sanitize event (remove metadata fields)
         event = sanitize_event_for_inference(event)
         
-        # Get prediction with explanation
-        results = ensemble_model.predict_with_explanation([event])
+        # Get prediction with explanations (RF + optionally LLM)
+        use_llm = False  # Can be made configurable
+        results = ensemble_model.predict_with_explanation([event], use_llm_explanation=use_llm)
         result = results[0]
         
         # Format response
         prediction = result['prediction']
         confidence = result['confidence']
-        explanation = result['explanation']
+        rf_explanation = result.get('rf_explanation', result.get('explanation', 'No explanation available'))
+        llm_explanation = result.get('llm_explanation')
         
         # Determine color/icon
         if prediction == 'malicious':
@@ -122,9 +138,26 @@ async def main(message: cl.Message):
 
 **Confidence:** {confidence:.1%}
 
-**Explanation:**
-{explanation}
+---
 
+## Features Explanation
+
+{rf_explanation}
+
+"""
+        
+        # Add LLM explanation if available
+        if llm_explanation:
+            response += f"""
+---
+
+## LLM Reasoning Explanation
+
+{llm_explanation}
+
+"""
+        
+        response += f"""
 ---
 
 **Event Details:**
@@ -144,7 +177,7 @@ async def main(message: cl.Message):
         ).send()
     except Exception as e:
         await cl.Message(
-            content=f"❌ Error processing event: {str(e)}",
+            content=f"❌ Error processing event: {str(e)} in {traceback.format_exc()}",
         ).send()
 
 

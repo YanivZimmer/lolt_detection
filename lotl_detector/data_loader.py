@@ -86,7 +86,7 @@ def split_dataset(events: List[Dict[str, Any]], test_size: float = 0.2,
     return train_events, test_events, train_indices, test_indices
 
 
-def get_labels(events: List[Dict[str, Any]], use_claude_label: bool = True) -> List[str]:
+def get_labels(events: List[Dict[str, Any]], use_claude_label: bool = False) -> List[str]:
     """Extract labels from events.
     
     Args:

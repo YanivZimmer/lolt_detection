@@ -201,7 +201,7 @@ class SmallNeuralNetwork:
     Uses PyTorch for training (can be run on Colab).
     """
     
-    def __init__(self, input_dim: int, hidden_dims: List[int] = [128, 64], 
+    def __init__(self, input_dim: int, hidden_dims: List[int] = [32, 64], 
                  dropout: float = 0.3, random_state: int = 42):
         """
         Initialize neural network.

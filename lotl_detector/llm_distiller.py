@@ -171,7 +171,7 @@ class LLMDistiller:
         
         return training_pairs
     
-    def generate_explanation(self, event: Dict[str, Any], predicted_label: str) -> str:
+    def generate_explanation(self, event: Dict[str, Any], rf_fe:str, predicted_label: str) -> str:
         """
         Generate an explanation for a prediction using distilled reasoning.
         This is a simplified version that uses pattern matching and heuristics.
@@ -227,7 +227,13 @@ class LLMDistiller:
                 reasons.append("No suspicious indicators detected")
         
         explanation = ". ".join(reasons) if reasons else "Standard system activity"
-        return f"{explanation}."
+
+        prompt = f'''You are a LLM that is responsible for generating reasoning for a classification of other modesl. 
+        You will recieve 1.json representing an event, 2.label telling you if it is a living of the land atack. then you will write an explanation to a security researcher on why is was classified like that. you can also use 3. and 4. feature based explanations as hints. feature based explanation: 1.{str(event)} 2.{predicted_label} 3.{rf_fe} 4.{explanation}'''
+        inputs = self._tokenizer(prompt, return_tensors="pt") # Tokenize the prompt
+        outputs = self._model.generate(**inputs, max_new_tokens=50, do_sample=True, num_beams=1)
+        generated_text = self._tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+        return f"{generated_text}."
     
     def predict_with_explanation(self, event: Dict[str, Any]) -> Tuple[str, str]:
         """

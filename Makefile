@@ -26,6 +26,11 @@ train:
 	python lotl_detector/train.py --dataset data.jsonl --output-dir models
 	@echo "✅ Training complete!"
 
+train-aug:
+	@echo "Training LOTL detection models with augmentation..."
+	python lotl_detector/train.py --dataset data.jsonl --output-dir models --use-augmentation
+	@echo "✅ Training complete!"
+
 evaluate:
 	@echo "Evaluating models..."
 	python lotl_detector/train.py --dataset data.jsonl --output-dir models
@@ -35,6 +40,16 @@ preprocess:
 	@echo "Preprocessing dataset..."
 	python -c "from lotl_detector.data_loader import load_dataset, filter_label_agreement; events = load_dataset('data.jsonl'); filtered, _ = filter_label_agreement(events); print(f'Filtered dataset: {len(filtered)} events')"
 	@echo "✅ Preprocessing complete!"
+
+explain:
+	@echo "Generating feature explanations..."
+	python lotl_detector/explain_features.py --model-dir models --data data.jsonl --top-k 10 --output feature_explanations.md
+	@echo "✅ Feature explanations generated!"
+
+benchmark:
+	@echo "Benchmarking inference time..."
+	python lotl_detector/evaluate_inference_time.py --model-dir models --dataset data.jsonl
+	@echo "✅ Inference benchmark complete!"
 
 clean:
 	@echo "Cleaning generated files..."

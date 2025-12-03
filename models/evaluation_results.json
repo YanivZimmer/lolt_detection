@@ -1,15 +1,20 @@
 {
   "metrics": {
-    "accuracy": 0.9795918367346939,
-    "precision": 0.9615384615384616,
+    "accuracy": 1.0,
+    "precision": 1.0,
     "recall": 1.0,
-    "f1": 0.9803921568627451
+    "f1": 1.0
   },
   "performance": {
-    "training_time_seconds": 9.46991491317749,
-    "inference_time_seconds": 0.6906571388244629,
-    "avg_latency_ms": 14.095043649478836,
-    "num_train": 192,
+    "inference_time_seconds": 9.46274995803833,
+    "avg_latency_ms": 193.1173460824149,
+    "throughput_events_per_sec": 5.178198749548056,
     "num_test": 49
+  },
+  "cost_analysis": {
+    "claude_cost_per_million": 1800.0,
+    "our_cost_per_million": 60.0,
+    "savings_per_million": 1740.0,
+    "cost_reduction_factor": 30.0
   }
 }

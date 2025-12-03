@@ -4,11 +4,11 @@ Main training script for LOTL detection models with k-fold cross-validation.
 import argparse
 import json
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 import time
 import numpy as np
 
-from data_loader import load_dataset, filter_label_agreement, get_labels, get_kfold_splits
+from data_loader import load_dataset, filter_label_agreement, get_labels, get_kfold_splits, sanitize_event_for_inference
 from ensemble import LOTLEnsemble
 from disagreement_detector import DisagreementDetector
 from augmentation import DataAugmenter
@@ -18,7 +18,8 @@ from models import evaluate_model
 def train_with_kfold(events: List[Dict[str, Any]], labels: List[str], 
                      n_splits: int = 5, random_seed: int = 42,
                      use_augmentation: bool = False, use_disagreement_detector: bool = False,
-                     use_rf: bool = True, use_nn: bool = True):
+                     use_rf: bool = True, use_nn: bool = False,
+                     top_k_features: Union[int,None] = None):
     """
     Train models using k-fold cross-validation.
     
@@ -49,36 +50,51 @@ def train_with_kfold(events: List[Dict[str, Any]], labels: List[str],
         print("="*60)
         
         # Get fold data
-        train_events = [events[i] for i in train_indices]
-        test_events = [events[i] for i in test_indices]
+        train_events_raw = [events[i] for i in train_indices]
+        test_events_raw = [events[i] for i in test_indices]
         train_labels_fold = [labels[i] for i in train_indices]
         test_labels_fold = [labels[i] for i in test_indices]
         
-        print(f"Training: {len(train_events)} events")
-        print(f"Test: {len(test_events)} events")
+        # CRITICAL: Sanitize events to match production conditions
+        # This ensures training/evaluation matches what the app will see
+        train_events = [sanitize_event_for_inference(event) for event in train_events_raw]
+        test_events = [sanitize_event_for_inference(event) for event in test_events_raw]
         
-        # Apply augmentation if requested
+        print(f"Training: {len(train_events)} events (sanitized)")
+        print(f"Test: {len(test_events)} events (sanitized)")
+        
+        # Apply augmentation if requested (on sanitized events)
         if use_augmentation:
             print("Applying data augmentation...")
             augmenter = DataAugmenter(augmentation_factor=0.5, random_seed=random_seed + fold_idx)
             train_events, train_labels_fold = augmenter.augment_dataset(train_events, train_labels_fold)
             print(f"After augmentation: {len(train_events)} training events")
         
-        # Train ensemble
+        # Train ensemble (Random Forest only, no NN)
         ensemble = LOTLEnsemble(
             use_random_forest=use_rf,
-            use_neural_network=use_nn,
-            use_llm_reasoning=False
+            use_neural_network=False,
+            use_llm_reasoning=False,  # LLM disabled during training/eval
+            top_k_features=top_k_features,
         )
         
         start_time = time.time()
         ensemble.fit(train_events, train_labels_fold)
         training_time = time.time() - start_time
         
-        # Evaluate on test set
-        start_time = time.time()
+        # Evaluate on test set with detailed timing (using sanitized events)
+        # Single event inference
+        single_event_times = []
+        for event in test_events[:10]:  # Sample for timing
+            start_time = time.perf_counter()
+            _ = ensemble.predict([event])
+            single_event_times.append((time.perf_counter() - start_time) * 1000)  # ms
+        
+        # Batch inference
+        start_time = time.perf_counter()
         test_predictions = ensemble.predict(test_events)
-        inference_time = time.time() - start_time
+        batch_inference_time = time.perf_counter() - start_time
+        avg_latency_ms = np.mean(single_event_times) if single_event_times else (batch_inference_time / len(test_events) * 1000)
         
         # Store predictions
         all_test_labels.extend(test_labels_fold)
@@ -96,7 +112,9 @@ def train_with_kfold(events: List[Dict[str, Any]], labels: List[str],
                 'f1': float(metrics['f1'])
             },
             'training_time': training_time,
-            'inference_time': inference_time
+            'batch_inference_time': batch_inference_time,
+            'avg_latency_ms': float(avg_latency_ms),
+            'throughput_events_per_sec': len(test_events) / batch_inference_time if batch_inference_time > 0 else 0
         })
     
     # Overall evaluation across all folds
@@ -113,11 +131,18 @@ def train_with_kfold(events: List[Dict[str, Any]], labels: List[str],
     avg_f1 = np.mean([r['metrics']['f1'] for r in fold_results])
     std_f1 = np.std([r['metrics']['f1'] for r in fold_results])
     
+    # Calculate average latency
+    avg_latency_ms = np.mean([r.get('avg_latency_ms', 0) for r in fold_results])
+    avg_throughput = np.mean([r.get('throughput_events_per_sec', 0) for r in fold_results])
+    
     print(f"\nAverage Metrics across {n_splits} folds:")
     print(f"  Accuracy:  {avg_accuracy:.4f}")
     print(f"  Precision: {avg_precision:.4f}")
     print(f"  Recall:    {avg_recall:.4f}")
     print(f"  F1-Score:  {avg_f1:.4f} (±{std_f1:.4f})")
+    print(f"\nPerformance Metrics:")
+    print(f"  Avg Latency: {avg_latency_ms:.4f} ms per event")
+    print(f"  Throughput:  {avg_throughput:.2f} events/second")
     
     return {
         'overall_metrics': {
@@ -132,6 +157,10 @@ def train_with_kfold(events: List[Dict[str, Any]], labels: List[str],
             'recall': float(avg_recall),
             'f1': float(avg_f1),
             'f1_std': float(std_f1)
+        },
+        'performance': {
+            'avg_latency_ms': float(avg_latency_ms),
+            'avg_throughput_events_per_sec': float(avg_throughput)
         },
         'fold_results': fold_results
     }
@@ -148,13 +177,15 @@ def main():
     parser.add_argument('--random-seed', type=int, default=42,
                        help='Random seed for reproducibility')
     parser.add_argument('--use-rf', action='store_true', default=True,
-                       help='Use Random Forest')
-    parser.add_argument('--use-nn', action='store_true', default=True,
-                       help='Use Neural Network')
+                       help='Use Random Forest (always enabled in this version)')
     parser.add_argument('--use-augmentation', action='store_true', default=False,
                        help='Use data augmentation')
     parser.add_argument('--use-disagreement-detector', action='store_true', default=False,
                        help='Train disagreement detector (V2 model)')
+    parser.add_argument('--exclude-disagreements', action='store_true', default=False,
+                       help='Exclude events where Claude and ground truth disagree')
+    parser.add_argument('--top-k-features', type=int, default=None,
+                       help='Limit to top K features by importance (default: all features)')
     parser.add_argument('--train-final-model', action='store_true', default=False,
                        help='Train final model on all data after k-fold evaluation')
     
@@ -169,14 +200,20 @@ def main():
     events = load_dataset(args.dataset)
     print(f"Loaded {len(events)} events")
     
-    # Filter events where Claude and ground truth agree
-    print("\nFiltering events where Claude and ground truth labels agree...")
-    filtered_events, disagreement_events = filter_label_agreement(events)
-    print(f"Kept {len(filtered_events)} events with agreement")
-    print(f"Removed {len(disagreement_events)} events with disagreement")
+    # Default: include all events (even disagreements)
+    # Only filter if exclude_disagreements flag is set
+    if args.exclude_disagreements:
+        print("\nFiltering events where Claude and ground truth labels agree...")
+        filtered_events, disagreement_events = filter_label_agreement(events)
+        print(f"Kept {len(filtered_events)} events with agreement")
+        print(f"Removed {len(disagreement_events)} events with disagreement")
+    else:
+        print("\nUsing all events (including disagreements)...")
+        filtered_events = events
+        disagreement_events = []
     
-    # Get labels (use Claude's predictions as target)
-    labels = get_labels(filtered_events, use_claude_label=True)
+    # Always use _label field (ground truth) as label
+    labels = get_labels(filtered_events, use_claude_label=False)
     
     # Count labels
     from collections import Counter
@@ -185,15 +222,16 @@ def main():
     for label, count in label_counts.items():
         print(f"  {label}: {count} ({count/len(labels)*100:.1f}%)")
     
-    # Train with k-fold cross-validation
+    # Train with k-fold cross-validation (Random Forest only)
     results = train_with_kfold(
         filtered_events, labels,
         n_splits=args.n_splits,
         random_seed=args.random_seed,
         use_augmentation=args.use_augmentation,
         use_disagreement_detector=args.use_disagreement_detector,
-        use_rf=args.use_rf,
-        use_nn=args.use_nn
+        use_rf=True,
+        use_nn=False,
+        top_k_features=args.top_k_features
     )
     
     # Train disagreement detector if requested
@@ -219,19 +257,23 @@ def main():
         print("Training Final Model on All Data")
         print("="*60)
         
-        # Apply augmentation if requested
-        train_events = filtered_events
+        # CRITICAL: Sanitize events to match production conditions
+        sanitized_events = [sanitize_event_for_inference(event) for event in filtered_events]
+        
+        # Apply augmentation if requested (on sanitized events)
+        train_events = sanitized_events
         train_labels = labels
         if args.use_augmentation:
             print("Applying data augmentation...")
             augmenter = DataAugmenter(augmentation_factor=0.5, random_seed=args.random_seed)
             train_events, train_labels = augmenter.augment_dataset(train_events, train_labels)
         
-        # Train final ensemble
+        # Train final Random Forest model (optionally with top-K features)
         ensemble = LOTLEnsemble(
-            use_random_forest=args.use_rf,
-            use_neural_network=args.use_nn,
-            use_llm_reasoning=False
+            use_random_forest=True,
+            use_neural_network=False,
+            use_llm_reasoning=False,
+            top_k_features=args.top_k_features
         )
         
         start_time = time.time()
@@ -263,13 +305,13 @@ def main():
         json.dump(results, f, indent=2)
     print(f"\nEvaluation results saved to {results_path}")
     
-    # Test explanation generation
+    # Test explanation generation (using sanitized events)
     if args.train_final_model:
         print("\n" + "="*60)
         print("Testing Explanation Generation")
         print("="*60)
         
-        sample_events = filtered_events[:3]
+        sample_events = [sanitize_event_for_inference(event) for event in filtered_events[:3]]
         explanations = ensemble.predict_with_explanation(sample_events)
         
         for i, (event, expl) in enumerate(zip(sample_events, explanations)):
@@ -278,7 +320,8 @@ def main():
             print(f"  Command: {cmdline[:100] if cmdline else 'N/A'}...")
             print(f"  Prediction: {expl['prediction']}")
             print(f"  Confidence: {expl['confidence']:.2f}")
-            print(f"  Explanation: {expl['explanation'][:200]}...")
+            rf_expl = expl.get('rf_explanation', expl.get('explanation', 'N/A'))
+            print(f"  Explanation: {rf_expl[:200]}...")
     
     print("\n" + "="*60)
     print("Training Complete!")

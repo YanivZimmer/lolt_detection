@@ -4,7 +4,7 @@
 
 1. **"Detecting Living Off The Land Attacks: How We Built a 30x Cheaper, 250x Faster Alternative to LLMs"**
 2. **"From $1,800 to $60: How Feature Engineering Beats LLMs for Security Detection"**
-3. **"LOTL Attack Detection: When Traditional ML Outperforms LLMs (And Costs 30x Less)"**
+3. **"LOTL Attack Detection: When Traditional ML Outperforms LLMs (And Costs 30x Less!)"**
 
 ## Post Content
 
