@@ -54,32 +54,6 @@ class ComprehensiveFeatureExtractor:
                 self.use_text_embeddings = False
         return self._embedding_model
     
-    def extract_all_features1(self, event: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Extract all features in the list of feature names: event_hour     ,  domain_length  ,     user_length     ,
- cmdline_word_count      ,
-process_id     ,
-obfuscation_score     ,
-exe_name_length       ,
- is_windows_binary        ,
-obfuscation_intensity       ,
-cmdline_char_count       
-    
-        """
-        features = {}
-        event_time=self._extract_event_time(event)
-        features['event_hour'], features['is_off_hours'] = event_time['event_hour'], event_time['is_off_hours']
-        # features['domain_length'] = event.get('DomainLength', 0)
-        # features['user_length'] = event.get('UserLength', 0)
-        # features['cmdline_word_count'] = event.get('CmdlineWordCount', 0)
-        # features['process_id'] = event.get('ProcessId', 0)
-        # features['obfuscation_score'] = event.get('ObfuscationScore', 0)
-        # features['exe_name_length'] = event.get('ExeNameLength', 0)
-        # features['is_windows_binary'] = event.get('IsWindowsBinary', 0)
-        # features['obfuscation_intensity'] = event.get('ObfuscationIntensity', 0)
-        # features['cmdline_char_count'] = event.get('CmdlineCharCount', 0)
-        #print("extracted here")
-        return features
     def _extract_event_time(self, event: Dict[str, Any]) -> Dict[str, Any]:
         """Extract event time features."""
         event_time = event.get('EventTime', '') or event.get('eventTime', '')

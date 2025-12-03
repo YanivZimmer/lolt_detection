@@ -538,12 +538,7 @@ class LOTLEnsemble:
         for feat_name, attack_type in feature_to_attack.items():
             if feat_name in feature_dict:# and feature_dict[feat_name] > 0:
                 attack_types.append(attack_type)
-        
-        # Also check event metadata
-        attack_technique = event.get('_attack_technique', '')
-        if attack_technique:
-            attack_types.append(attack_technique)
-        
+                
         # Return most common or first
         if attack_types:
             from collections import Counter
