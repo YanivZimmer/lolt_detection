@@ -13,8 +13,8 @@
     "f1_std": 0.026244998431081672
   },
   "performance": {
-    "avg_latency_ms": 26.67501160001848,
-    "avg_throughput_events_per_sec": 98.690100486011
+    "avg_latency_ms": 26.445962478755973,
+    "avg_throughput_events_per_sec": 95.37543755713548
   },
   "fold_results": [
     {
@@ -25,10 +25,10 @@
         "recall": 1.0,
         "f1": 0.9824561403508771
       },
-      "training_time": 9.958768844604492,
-      "batch_inference_time": 0.5791084579832386,
-      "avg_latency_ms": 29.179033296531998,
-      "throughput_events_per_sec": 89.79319725546999
+      "training_time": 18.208612203598022,
+      "batch_inference_time": 0.5953791670035571,
+      "avg_latency_ms": 28.712208304204978,
+      "throughput_events_per_sec": 87.33930053634094
     },
     {
       "fold": 2,
@@ -38,10 +38,10 @@
         "recall": 1.0,
         "f1": 1.0
       },
-      "training_time": 4.598741769790649,
-      "batch_inference_time": 0.5023386670218315,
-      "avg_latency_ms": 25.717566601815633,
-      "throughput_events_per_sec": 101.5251330389495
+      "training_time": 4.938585996627808,
+      "batch_inference_time": 0.5096167089941446,
+      "avg_latency_ms": 24.843670698464848,
+      "throughput_events_per_sec": 100.07521162455838
     },
     {
       "fold": 3,
@@ -51,10 +51,10 @@
         "recall": 0.9629629629629629,
         "f1": 0.9285714285714286
       },
-      "training_time": 4.6224000453948975,
-      "batch_inference_time": 0.49257324999780394,
-      "avg_latency_ms": 25.46505000500474,
-      "throughput_events_per_sec": 103.53790020109166
+      "training_time": 4.897118091583252,
+      "batch_inference_time": 0.5425854579953011,
+      "avg_latency_ms": 26.157128997147083,
+      "throughput_events_per_sec": 93.99441000212296
     },
     {
       "fold": 4,
@@ -64,10 +64,10 @@
         "recall": 1.0,
         "f1": 0.9818181818181818
       },
-      "training_time": 4.858942985534668,
-      "batch_inference_time": 0.5104664579848759,
-      "avg_latency_ms": 26.201649897848256,
-      "throughput_events_per_sec": 99.90862122719732
+      "training_time": 4.597718000411987,
+      "batch_inference_time": 0.5172059169854037,
+      "avg_latency_ms": 25.939329393440858,
+      "throughput_events_per_sec": 98.60676052830094
     },
     {
       "fold": 5,
@@ -77,10 +77,10 @@
         "recall": 1.0,
         "f1": 1.0
       },
-      "training_time": 4.955862045288086,
-      "batch_inference_time": 0.5167924580164254,
-      "avg_latency_ms": 26.811758198891766,
-      "throughput_events_per_sec": 98.68565070734653
+      "training_time": 4.572512149810791,
+      "batch_inference_time": 0.52652495901566,
+      "avg_latency_ms": 26.5774750005221,
+      "throughput_events_per_sec": 96.86150509435423
     }
   ],
   "config": {

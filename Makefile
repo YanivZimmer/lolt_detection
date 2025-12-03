@@ -15,7 +15,7 @@ setup:
 	@echo "Setting up environment..."
 	uv venv
 	uv pip install -e .
-	@echo "✅ Setup complete!"
+	@echo "✅ Setup almost complete, please run source .venv/bin/activate to activate"
 
 serve:
 	@echo "Starting Chainlit app..."

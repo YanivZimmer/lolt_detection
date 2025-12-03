@@ -72,7 +72,7 @@ Example event format:
   "Domain": "NT AUTHORITY",
   "AccountName": "NETWORK SERVICE",
   "IntegrityLevel": "Medium",
-  "CurrentDirectory": "C:WindowsSystem32\"",
+  "CurrentDirectory": "C:WindowsSystem32",
   "LogonId": "0x3e7"
 }
 
