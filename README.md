@@ -6,17 +6,17 @@ An efficient, explainable detection system for Living Off The Land (LOTL) attack
 
 This project implements a multi-model ensemble approach to detect LOTL attacks in Windows Sysmon events. The system combines:
 
-- **Random Forest** with comprehensive feature engineering
+- **Random Forest** with comprehensive feature engineering (Only one that used on default)
 - **Small Neural Network** for deep pattern recognition
 - **LLM Reasoning Distillation** for explainable predictions
 
-The detector achieves ≥90% precision and ≥95% recall while running ~2x faster and being 30x+ cheaper than Claude-Sonnet-4.5.
+The detector achieves ≥98% precision and ≥99% recall while running ~50x faster and being 50x+ cheaper than Claude-Sonnet-4.5.
 
 ## Features
 
-- 🎯 **High Performance**: Achieves 90%+ precision and 95%+ recall
-- ⚡ **Fast Inference**: ~2x faster than LLM baseline
-- 💰 **Cost Effective**: 30x+ cheaper than Claude-Sonnet-4.5
+- 🎯 **High Performance**: Achieves 98%+ precision and 98%+ recall
+- ⚡ **Fast Inference**: ~50x faster than LLM baseline
+- 💰 **Cost Effective**: 50x+ cheaper than Claude-Sonnet-4.5
 - 🔍 **Explainable**: Provides human-readable explanations for each prediction
 - 🧩 **Modular Design**: Clean separation of components
 
@@ -31,11 +31,12 @@ The detector achieves ≥90% precision and ≥95% recall while running ~2x faste
 
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd torq3
+git clone https://github.com/YanivZimmer/lolt_detection
+cd lolt_detection
 
 # Create virtual environment and install dependencies
 make setup
+source .venv/bin/activate
 ```
 
 Or manually:
@@ -103,7 +104,7 @@ This runs evaluation on the test set and saves results to `models/evaluation_res
 ## Project Structure
 
 ```
-torq3/
+lolt_detector/
 ├── data_loader.py              # Dataset loading and preprocessing
 ├── feature_extractor.py        # Comprehensive feature extraction
 ├── survivalism_features.py     # Survivalism/LOTL behavioral features
@@ -179,7 +180,7 @@ The system extracts comprehensive features from Sysmon events:
 ### Models
 
 1. **Random Forest**: 100 trees with balanced class weights (The only one that used on default)
-2. **Neural Network**: 2-layer MLP (128→64→2) with dropout
+2. **Neural Network**: 2-layer MLP (32→16→2) with dropout
 3. **Ensemble**: Weighted voting based on prediction confidence
 4. **Disagreement Detector (V2)**: Optional model to detect cases where Claude and ground truth disagree
 
@@ -217,7 +218,7 @@ Each line in `data.jsonl` is a JSON object:
 }
 ```
 
-**Important**: The model only uses production-available fields (excludes `_label`, `claude-sonnet-4-5`, `prompt`, etc.)
+**Important**: The model only uses production-available fields to avoide leakage (excludes `_label`, `claude-sonnet-4-5`, `prompt`, etc.)
 
 ## Limitations
 

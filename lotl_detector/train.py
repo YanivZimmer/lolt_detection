@@ -154,18 +154,12 @@ def train_with_kfold(
     avg_f1 = np.mean([r["metrics"]["f1"] for r in fold_results])
     std_f1 = np.std([r["metrics"]["f1"] for r in fold_results])
 
-    # Calculate average latency
-    avg_latency_ms = np.mean([r.get("avg_latency_ms", 0) for r in fold_results])
-    avg_throughput = np.mean([r.get("throughput_events_per_sec", 0) for r in fold_results])
 
     print(f"\nAverage Metrics across {n_splits} folds:")
     print(f"  Accuracy:  {avg_accuracy:.4f}")
     print(f"  Precision: {avg_precision:.4f}")
     print(f"  Recall:    {avg_recall:.4f}")
     print(f"  F1-Score:  {avg_f1:.4f} (±{std_f1:.4f})")
-    print(f"\nPerformance Metrics:")
-    print(f"  Avg Latency: {avg_latency_ms:.4f} ms per event")
-    print(f"  Throughput:  {avg_throughput:.2f} events/second")
 
     return {
         "overall_metrics": {
